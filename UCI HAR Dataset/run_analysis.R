@@ -36,6 +36,32 @@ library(dplyr)
 #join activity data and labels
 Activity <- left_join(ActivityData, ActivityLabels, by="ActivityNum")
 
-?left_join
+#rename SubjectData columns
+names(SubjectData) <- "Subject"
 
-#mean and sd of each measurement 
+#rename FeaturesData columns using columns from FeaturesNames
+names(FeaturesData) <- FeaturesNames$V2
+
+#create one dataset from SubjectData, Activity, FeaturesData
+DataSet <- cbind(SubjectData, Activity)
+DataSet <- cbind(DataSet, FeaturesData)
+
+###Create New datasets by extracting only the measurements on the mean and standard deviation for each measurement
+subFeaturesNames <- FeaturesNames$V2[grep("mean\\(\\)|std\\(\\)", FeaturesNames$V2)]
+DataNames <- c("Subject", "Activity", as.character(subFeaturesNames))
+DataSet <- subset(DataSet, select=DataNames)
+
+#####Rename the columns of the large dataset using more descriptive activity names
+names(DataSet)<-gsub("^t", "time", names(DataSet))
+names(DataSet)<-gsub("^f", "frequency", names(DataSet))
+names(DataSet)<-gsub("Acc", "Accelerometer", names(DataSet))
+names(DataSet)<-gsub("Gyro", "Gyroscope", names(DataSet))
+names(DataSet)<-gsub("Mag", "Magnitude", names(DataSet))
+names(DataSet)<-gsub("BodyBody", "Body", names(DataSet))
+
+####Create a second, independent tidy data set with the average of each variable for each activity and each subject
+SecondDataSet<-aggregate(. ~Subject + Activity, DataSet, mean)
+SecondDataSet<-SecondDataSet[order(SecondDataSet$Subject,SecondDataSet$Activity),]
+
+#Save this tidy dataset to local file
+write.table(SecondDataSet, file = "tidydata.txt",row.name=FALSE)
